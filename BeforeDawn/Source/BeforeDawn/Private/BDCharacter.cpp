@@ -4,6 +4,8 @@
 #include "BDCharacter.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
+
 
 // Sets default values
 ABDCharacter::ABDCharacter()
@@ -12,11 +14,15 @@ ABDCharacter::ABDCharacter()
 	PrimaryActorTick.bCanEverTick = true;
 
 	SpringArmComp = CreateDefaultSubobject<USpringArmComponent>("SpringArmComp");
+	SpringArmComp->bUsePawnControlRotation = true;
 	SpringArmComp->SetupAttachment(RootComponent);
-	SpringArmComp->bUsePawnControlRotation = false;
 	
 	CameraComp = CreateDefaultSubobject<UCameraComponent>("CameraComp");
 	CameraComp->SetupAttachment(SpringArmComp);
+
+	GetCharacterMovement()->bOrientRotationToMovement = true;
+	
+	bUseControllerRotationYaw = false;
 }
 
 // Called when the game starts or when spawned
@@ -33,10 +39,36 @@ void ABDCharacter::Tick(float DeltaTime)
 
 }
 
+void ABDCharacter::MoveForward(float value)
+{
+	FRotator controlRot = GetControlRotation();
+	controlRot.Pitch = 0.0f;
+	controlRot.Roll = 0.0f;
+	
+	AddMovementInput(controlRot.Vector(), value);
+}
+
+void ABDCharacter::MoveRight(float value)
+{
+	FRotator controlRot = GetControlRotation();
+	controlRot.Pitch = 0.0f;
+	controlRot.Yaw = 0.0f;
+
+	FVector RightVector = FRotationMatrix(controlRot).GetScaledAxis(EAxis::Y);
+	
+	AddMovementInput(RightVector, value);
+}
+
+
 // Called to bind functionality to input
 void ABDCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
+	PlayerInputComponent->BindAxis("MoveForward", this, &ABDCharacter::MoveForward);
+	PlayerInputComponent->BindAxis("MoveRight", this, &ABDCharacter::MoveRight);
+
+	PlayerInputComponent->BindAxis("Turn", this, &APawn::AddControllerYawInput);
+	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
 }
 
